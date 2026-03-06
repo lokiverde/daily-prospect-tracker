@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 40" fill="none">
+  <!-- Accent bars -->
+  <rect x="0" y="4" width="4" height="32" rx="1" fill="#2563EB"/>
+  <rect x="6" y="4" width="4" height="32" rx="1" fill="#2563EB"/>
+  <!-- App name -->
+  <text x="16" y="32" font-family="system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="700" fill="#1e293b" letter-spacing="-0.5">Daily Prospect Tracker</text>
+</svg>
