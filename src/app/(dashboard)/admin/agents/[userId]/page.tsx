@@ -19,7 +19,7 @@ export default async function AgentEditPage({ params }: PageProps) {
   // Fetch the agent's profile
   const { data: agent } = await adminDb
     .from('users')
-    .select('id, full_name, email, role, team_id, brokerage_id')
+    .select('id, full_name, email, role, team_id, brokerage_id, is_active')
     .eq('id', userId)
     .single()
 
@@ -32,6 +32,7 @@ export default async function AgentEditPage({ params }: PageProps) {
     role: string
     team_id: string | null
     brokerage_id: string | null
+    is_active: boolean
   }
 
   // Fetch available teams in the brokerage

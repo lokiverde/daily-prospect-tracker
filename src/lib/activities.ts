@@ -6,6 +6,7 @@ export const CATEGORY_ORDER: ActivityCategory[] = [
   'marketing',
   'nurture',
   'lead_mgmt',
+  'peak_performance',
   'contract',
   'closing',
 ]
@@ -14,6 +15,7 @@ export const CATEGORY_LABELS: Record<ActivityCategory, string> = {
   closing: 'Closing',
   contract: 'Contract',
   lead_mgmt: 'Lead Management',
+  peak_performance: 'Peak Performance',
   appointment: 'Appointments',
   nurture: 'Client Nurture',
   marketing: 'Marketing',

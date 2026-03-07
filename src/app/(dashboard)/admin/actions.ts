@@ -68,11 +68,26 @@ export async function removeAgentFromBrokerage(userId: string) {
   const { error, adminDb, user } = await requireAdmin()
   if (error || !adminDb || !user) return { error: error || 'Failed' }
 
-  if (userId === user.id) return { error: 'Cannot remove yourself' }
+  if (userId === user.id) return { error: 'Cannot archive yourself' }
 
   const { error: updateError } = await adminDb
     .from('users')
-    .update({ brokerage_id: null, team_id: null })
+    .update({ is_active: false, team_id: null })
+    .eq('id', userId)
+
+  if (updateError) return { error: updateError.message }
+
+  revalidatePath('/admin')
+  return { success: true }
+}
+
+export async function restoreAgent(userId: string) {
+  const { error, adminDb } = await requireAdmin()
+  if (error || !adminDb) return { error: error || 'Failed' }
+
+  const { error: updateError } = await adminDb
+    .from('users')
+    .update({ is_active: true })
     .eq('id', userId)
 
   if (updateError) return { error: updateError.message }

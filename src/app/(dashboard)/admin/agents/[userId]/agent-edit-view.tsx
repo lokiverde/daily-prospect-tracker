@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { updateAgentRole, assignAgentToTeam, removeAgentFromBrokerage } from '../../actions'
+import { updateAgentRole, assignAgentToTeam, removeAgentFromBrokerage, restoreAgent } from '../../actions'
 import type { UserRole } from '@/lib/supabase/types'
 
 interface AgentEditViewProps {
@@ -15,6 +15,7 @@ interface AgentEditViewProps {
     role: string
     team_id: string | null
     brokerage_id: string | null
+    is_active: boolean
   }
   teams: { id: string; name: string }[]
   isCurrentUser: boolean
@@ -74,6 +75,18 @@ export function AgentEditView({ agent, teams, isCurrentUser }: AgentEditViewProp
       if (result.error) {
         setError(result.error)
         setShowRemoveConfirm(false)
+      } else {
+        router.push('/admin')
+      }
+    })
+  }
+
+  function handleRestore() {
+    setError(null)
+    startTransition(async () => {
+      const result = await restoreAgent(agent.id)
+      if (result.error) {
+        setError(result.error)
       } else {
         router.push('/admin')
       }
@@ -169,21 +182,38 @@ export function AgentEditView({ agent, teams, isCurrentUser }: AgentEditViewProp
         </div>
       </section>
 
-      {/* Remove from brokerage */}
+      {/* Archive / Restore */}
       {!isCurrentUser && (
         <section className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Danger Zone</h3>
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">
+              {agent.is_active === false ? 'Archived Agent' : 'Danger Zone'}
+            </h3>
           </div>
           <div className="p-4">
-            {showRemoveConfirm ? (
+            {agent.is_active === false ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted">
+                  This agent is archived. They cannot log in or appear in leaderboards. Their activity history is preserved.
+                </p>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleRestore}
+                  disabled={isPending}
+                  className="w-full h-10 rounded-lg text-sm font-medium bg-accent text-white touch-manipulation"
+                >
+                  {isPending ? 'Restoring...' : 'Restore Agent'}
+                </motion.button>
+              </div>
+            ) : showRemoveConfirm ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-fire">
                   <AlertTriangle className="h-4 w-4" />
-                  <p className="text-sm font-medium">Remove {agent.full_name} from brokerage?</p>
+                  <p className="text-sm font-medium">Archive {agent.full_name}?</p>
                 </div>
                 <p className="text-xs text-muted">
-                  Their activity history will be preserved but they will lose access to team and brokerage features.
+                  Their activity history will be preserved but they will be blocked from logging in and hidden from leaderboards. You can restore them later.
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -201,7 +231,7 @@ export function AgentEditView({ agent, teams, isCurrentUser }: AgentEditViewProp
                     disabled={isPending}
                     className="flex-1 h-10 rounded-lg text-sm font-medium bg-fire text-white touch-manipulation"
                   >
-                    {isPending ? 'Removing...' : 'Remove'}
+                    {isPending ? 'Archiving...' : 'Archive'}
                   </motion.button>
                 </div>
               </div>
@@ -211,7 +241,7 @@ export function AgentEditView({ agent, teams, isCurrentUser }: AgentEditViewProp
                 onClick={() => setShowRemoveConfirm(true)}
                 className="w-full h-10 rounded-lg text-sm font-medium text-fire border border-fire/30 touch-manipulation"
               >
-                Remove from Brokerage
+                Archive Agent
               </button>
             )}
           </div>

@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, UserPlus, ChevronRight } from 'lucide-react'
+import { Search, UserPlus, ChevronRight, RotateCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { assignAgentToTeam } from './actions'
+import { assignAgentToTeam, restoreAgent } from './actions'
 
 interface AgentRow {
   id: string
@@ -13,6 +13,7 @@ interface AgentRow {
   email: string
   role: string
   team_id: string | null
+  is_active: boolean
   teams: { name: string } | null
 }
 
@@ -33,8 +34,12 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
   const [isPending, startTransition] = useTransition()
   const [search, setSearch] = useState('')
   const [teamFilter, setTeamFilter] = useState<string>('all')
+  const [showArchived, setShowArchived] = useState(false)
   const [agents, setAgents] = useState(initialAgents)
   const [pendingAgentId, setPendingAgentId] = useState<string | null>(null)
+
+  const activeAgents = agents.filter((a) => a.is_active !== false)
+  const archivedAgents = agents.filter((a) => a.is_active === false)
 
   function handleTeamChange(agentId: string, newTeamId: string) {
     setPendingAgentId(agentId)
@@ -62,20 +67,40 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
     })
   }
 
+  function handleRestore(agentId: string) {
+    setPendingAgentId(agentId)
+    // Optimistic update
+    setAgents((prev) =>
+      prev.map((a) => a.id === agentId ? { ...a, is_active: true } : a)
+    )
+    startTransition(async () => {
+      const result = await restoreAgent(agentId)
+      if (result.error) {
+        setAgents(initialAgents)
+      }
+      setPendingAgentId(null)
+    })
+  }
+
+  // Choose active or archived list
+  const baseList = showArchived ? archivedAgents : activeAgents
+
   // Apply search filter
   let filtered = search.trim()
-    ? agents.filter(
+    ? baseList.filter(
         (a) =>
           a.full_name?.toLowerCase().includes(search.toLowerCase()) ||
           a.email?.toLowerCase().includes(search.toLowerCase())
       )
-    : agents
+    : baseList
 
-  // Apply team filter
-  if (teamFilter === 'none') {
-    filtered = filtered.filter((a) => !a.team_id)
-  } else if (teamFilter !== 'all') {
-    filtered = filtered.filter((a) => a.team_id === teamFilter)
+  // Apply team filter (only for active agents)
+  if (!showArchived) {
+    if (teamFilter === 'none') {
+      filtered = filtered.filter((a) => !a.team_id)
+    } else if (teamFilter !== 'all') {
+      filtered = filtered.filter((a) => a.team_id === teamFilter)
+    }
   }
 
   return (
@@ -103,8 +128,38 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
         </motion.button>
       </div>
 
-      {/* Team filter */}
-      {teams.length > 0 && (
+      {/* Active / Archived toggle */}
+      <div className="flex gap-1.5 -mx-4 px-4">
+        <button
+          type="button"
+          onClick={() => { setShowArchived(false); setTeamFilter('all') }}
+          className={cn(
+            'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors touch-manipulation',
+            !showArchived
+              ? 'bg-primary text-white'
+              : 'bg-secondary text-muted'
+          )}
+        >
+          Active ({activeAgents.length})
+        </button>
+        {archivedAgents.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowArchived(true)}
+            className={cn(
+              'px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors touch-manipulation',
+              showArchived
+                ? 'bg-fire/80 text-white'
+                : 'bg-secondary text-muted'
+            )}
+          >
+            Archived ({archivedAgents.length})
+          </button>
+        )}
+      </div>
+
+      {/* Team filter (only for active agents) */}
+      {!showArchived && teams.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4">
           <button
             type="button"
@@ -116,10 +171,10 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
                 : 'bg-secondary text-muted'
             )}
           >
-            All ({agents.length})
+            All ({activeAgents.length})
           </button>
           {teams.map((t) => {
-            const count = agents.filter((a) => a.team_id === t.id).length
+            const count = activeAgents.filter((a) => a.team_id === t.id).length
             return (
               <button
                 key={t.id}
@@ -146,7 +201,7 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
                 : 'bg-secondary text-muted'
             )}
           >
-            Unassigned ({agents.filter((a) => !a.team_id).length})
+            Unassigned ({activeAgents.filter((a) => !a.team_id).length})
           </button>
         </div>
       )}
@@ -173,10 +228,10 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
                 </span>
               </motion.button>
 
-              {/* Info + team selector */}
+              {/* Info + team selector or restore */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className={cn('text-sm font-medium truncate', showArchived ? 'text-muted' : 'text-foreground')}>
                     {agent.full_name || 'Unknown'}
                   </p>
                   <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0', roleStyle.className)}>
@@ -184,21 +239,33 @@ export function AgentsView({ agents: initialAgents, teams }: AgentsViewProps) {
                   </span>
                 </div>
 
-                {/* Team assignment dropdown */}
-                <select
-                  value={agent.team_id || ''}
-                  onChange={(e) => handleTeamChange(agent.id, e.target.value)}
-                  disabled={isLoading}
-                  className={cn(
-                    'mt-1 h-7 px-2 rounded-md text-xs border-0 focus:outline-none focus:ring-1 focus:ring-primary',
-                    agent.team_id ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted'
-                  )}
-                >
-                  <option value="">No team</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                {showArchived ? (
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleRestore(agent.id)}
+                    disabled={isLoading}
+                    className="mt-1 h-7 px-3 rounded-md text-xs font-medium bg-accent/10 text-accent flex items-center gap-1 touch-manipulation"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    {isLoading ? 'Restoring...' : 'Restore'}
+                  </motion.button>
+                ) : (
+                  <select
+                    value={agent.team_id || ''}
+                    onChange={(e) => handleTeamChange(agent.id, e.target.value)}
+                    disabled={isLoading}
+                    className={cn(
+                      'mt-1 h-7 px-2 rounded-md text-xs border-0 focus:outline-none focus:ring-1 focus:ring-primary',
+                      agent.team_id ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted'
+                    )}
+                  >
+                    <option value="">No team</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Edit chevron */}

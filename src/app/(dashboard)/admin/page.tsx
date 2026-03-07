@@ -30,7 +30,7 @@ export default async function AdminAgentsPage() {
   // Fetch all agents in the brokerage with team info (using admin client to see all)
   const { data: agents } = await adminDb
     .from('users')
-    .select('id, full_name, email, role, team_id, teams!team_id(name)')
+    .select('id, full_name, email, role, team_id, is_active, teams!team_id(name)')
     .eq('brokerage_id', brokerageId)
     .order('full_name')
 
@@ -48,6 +48,7 @@ export default async function AdminAgentsPage() {
     email: string
     role: string
     team_id: string | null
+    is_active: boolean
     teams: { name: string } | null
   }
 

@@ -1,6 +1,6 @@
 export type UserRole = 'agent' | 'team_leader' | 'broker' | 'admin'
 export type BrokerageVisibility = 'public' | 'private'
-export type ActivityCategory = 'closing' | 'contract' | 'lead_mgmt' | 'appointment' | 'contact' | 'marketing' | 'nurture'
+export type ActivityCategory = 'closing' | 'contract' | 'lead_mgmt' | 'appointment' | 'contact' | 'marketing' | 'nurture' | 'peak_performance'
 export type GoalSetBy = 'self' | 'admin'
 
 export type Database = {
@@ -55,6 +55,7 @@ export type Database = {
           role: UserRole
           brokerage_visibility: BrokerageVisibility
           is_onboarded: boolean
+          is_active: boolean
           settings: Record<string, unknown>
           created_at: string
           updated_at: string
@@ -70,6 +71,7 @@ export type Database = {
           role?: UserRole
           brokerage_visibility?: BrokerageVisibility
           is_onboarded?: boolean
+          is_active?: boolean
           settings?: Record<string, unknown>
           created_at?: string
           updated_at?: string
@@ -84,6 +86,7 @@ export type Database = {
           role?: UserRole
           brokerage_visibility?: BrokerageVisibility
           is_onboarded?: boolean
+          is_active?: boolean
           settings?: Record<string, unknown>
           updated_at?: string
         }
