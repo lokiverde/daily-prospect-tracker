@@ -1,5 +1,7 @@
 # Daily Prospect Tracker
 
+### 🔴 [Live Demo](https://daily-prospect-tracker.vercel.app) | [Deploy Your Own](#quick-start) | [Done-For-You Setup](#want-it-done-for-you)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flokiverde%2Fdaily-prospect-tracker&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Supabase%20credentials%20from%20your%20project%20dashboard&envLink=https%3A%2F%2Fsupabase.com%2Fdashboard%2Fproject%2F_%2Fsettings%2Fapi&project-name=daily-prospect-tracker)
 
@@ -191,6 +193,29 @@ All RLS policies use SECURITY DEFINER helper functions to prevent circular depen
 - [ ] Phone contacts integration (native wrapper)
 - [ ] Call logging detection
 - [ ] PDF report export
+
+---
+
+## Want It Done For You?
+
+Love the tool but don't want to set it up yourself? We offer professional deployment and customization.
+
+| Option | What You Get | Price |
+|--------|--------------|-------|
+| **Self-Host** | This repo, your infrastructure | Free |
+| **Done-For-You** | We deploy, configure, and train your team | $4,500 |
+| **Custom Build** | White-label, integrations, custom features | $7,500+ |
+
+**Done-For-You includes:**
+- Full Supabase + Vercel deployment
+- Custom domain setup
+- Brokerage branding
+- Team onboarding session
+- 30 days of support
+
+📅 **[Book a Call](https://calendly.com/techtony/30min)** to discuss your needs.
+
+Built by [The Invisible Department](https://invisible-department.vercel.app) — AI systems that work while you sleep.
 
 ---
 
