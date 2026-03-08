@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Activity, Users, Settings, Shield, type LucideIcon } from 'lucide-react'
+import { Home, Activity, Users, Settings, Shield, Target, type LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
@@ -24,16 +24,28 @@ const settingsTab: Tab = { label: 'Settings', href: '/settings', icon: Settings 
 
 interface MobileNavProps {
   userRole?: string
+  isDemo?: boolean
 }
 
-export function MobileNav({ userRole }: MobileNavProps) {
+export function MobileNav({ userRole, isDemo = false }: MobileNavProps) {
   const pathname = usePathname()
 
   const isAdmin = userRole === 'admin' || userRole === 'broker'
 
-  const tabs: Tab[] = isAdmin
-    ? [...baseTabs, adminTab, settingsTab]
-    : [...baseTabs, settingsTab]
+  // In demo mode: show the same tabs a regular agent sees, plus Goals
+  const demoTabs: Tab[] = [
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Log', href: '/log', icon: Activity },
+    { label: 'Team', href: '/team', icon: Users },
+    { label: 'Goals', href: '/goals', icon: Target },
+    { label: 'Settings', href: '/settings', icon: Settings },
+  ]
+
+  const tabs: Tab[] = isDemo
+    ? demoTabs
+    : isAdmin
+      ? [...baseTabs, adminTab, settingsTab]
+      : [...baseTabs, settingsTab]
 
   return (
     <nav

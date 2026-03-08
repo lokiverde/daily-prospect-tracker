@@ -1,7 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { MemberDetailView } from './member-detail-view'
+import { isDemoMode } from '@/lib/demo'
 import type { MemberActivityRow } from '../actions'
 
 interface PageProps {
@@ -12,6 +13,55 @@ interface PageProps {
 export default async function MemberDetailPage({ params, searchParams }: PageProps) {
   const { userId } = await params
   const { period: periodParam } = await searchParams
+
+  const period = (['week', 'month', 'year'].includes(periodParam || '') ? periodParam : 'week') as 'week' | 'month' | 'year'
+
+  // Demo mode: use admin client, skip auth checks
+  if (isDemoMode()) {
+    const supabase = createAdminClient()
+
+    const { data: memberProfile } = await supabase
+      .from('users')
+      .select('full_name, email, role, avatar_url')
+      .eq('id', userId)
+      .single()
+
+    const { data: activities } = await supabase.rpc('get_member_activity_summary', {
+      p_user_id: userId,
+      p_period: period,
+    })
+
+    const { data: streak } = await supabase
+      .from('streaks')
+      .select('current_streak, longest_streak')
+      .eq('user_id', userId)
+      .single()
+
+    const typedProfile = memberProfile as {
+      full_name: string
+      email: string
+      role: string
+      avatar_url: string | null
+    } | null
+
+    return (
+      <>
+        <Header
+          title={typedProfile?.full_name || 'Member'}
+          subtitle={typedProfile?.role === 'team_leader' ? 'Team Leader' : 'Agent'}
+        />
+        <MemberDetailView
+          memberId={userId}
+          memberName={typedProfile?.full_name || 'Unknown'}
+          memberRole={typedProfile?.role || 'agent'}
+          activities={(activities || []) as MemberActivityRow[]}
+          currentStreak={streak?.current_streak || 0}
+          longestStreak={streak?.longest_streak || 0}
+          initialPeriod={period}
+        />
+      </>
+    )
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -42,8 +92,6 @@ export default async function MemberDetailPage({ params, searchParams }: PagePro
       redirect('/team')
     }
   }
-
-  const period = (['week', 'month', 'year'].includes(periodParam || '') ? periodParam : 'week') as 'week' | 'month' | 'year'
 
   // Fetch member profile
   const { data: memberProfile } = await supabase

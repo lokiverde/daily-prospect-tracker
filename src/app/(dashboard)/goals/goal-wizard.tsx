@@ -8,11 +8,13 @@ import { PresetButton } from '@/components/ui/preset-button'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { calculateGoals, type ConversionRates } from '@/lib/calculations'
 import { saveGoals, markOnboarded } from './actions'
+import { saveDemoGoals } from './demo-actions'
 import type { Tables } from '@/lib/supabase/types'
 
 interface GoalWizardProps {
   existingGoals: Tables<'goals'> | null
   conversionRates: ConversionRates
+  isDemo?: boolean
 }
 
 const INCOME_PRESETS = [100000, 150000, 200000, 250000, 300000]
@@ -26,7 +28,7 @@ const STEPS = [
   { title: 'Your Goal Summary', subtitle: 'Review your targets and daily points goal' },
 ]
 
-export function GoalWizard({ existingGoals, conversionRates }: GoalWizardProps) {
+export function GoalWizard({ existingGoals, conversionRates, isDemo = false }: GoalWizardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [step, setStep] = useState(0)
@@ -76,7 +78,7 @@ export function GoalWizard({ existingGoals, conversionRates }: GoalWizardProps) 
     setError(null)
 
     startTransition(async () => {
-      const result = await saveGoals({
+      const goalData = {
         annualIncomeGoal: annualIncome,
         avgCommissionPct: commissionRate,
         avgSalePrice: salePrice,
@@ -85,18 +87,22 @@ export function GoalWizard({ existingGoals, conversionRates }: GoalWizardProps) 
         appointmentsGoal: calculated.appointmentsGoal,
         contactsGoal: calculated.contactsGoal,
         dailyPointsGoal: dailyPoints,
-      })
+      }
+
+      const result = isDemo
+        ? await saveDemoGoals(goalData)
+        : await saveGoals(goalData)
 
       if (result.error) {
         setError(result.error)
         return
       }
 
-      if (!existingGoals) {
+      if (!isDemo && !existingGoals) {
         await markOnboarded()
       }
 
-      router.push('/')
+      router.push(isDemo ? '/team' : '/')
       router.refresh()
     })
   }

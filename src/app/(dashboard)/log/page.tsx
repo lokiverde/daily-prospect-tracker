@@ -1,4 +1,4 @@
-import { createClient, getBrokerageTimezone, createAdminClient } from '@/lib/supabase/server'
+import { createClient, getBrokerageTimezone, createAdminClient, getDemoBrokerageTimezone } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTodayRange } from '@/lib/calculations'
 import { LogView } from './log-view'
@@ -25,16 +25,11 @@ export default async function LogPage() {
 
     const demoUserId = demoUser?.id || ''
 
-    // Get brokerage timezone
-    const { data: brokerage } = await supabase
-      .from('brokerages')
-      .select('settings')
-      .limit(1)
-      .single()
-    const tz = (brokerage?.settings as { timezone?: string } | null)?.timezone || 'America/Los_Angeles'
+    const tz = await getDemoBrokerageTimezone()
     const { start, end } = getTodayRange(tz)
+    const currentYear = new Date().getFullYear()
 
-    const [activityTypesResult, todayActivitiesResult] = await Promise.all([
+    const [activityTypesResult, todayActivitiesResult, goalsResult, streakResult] = await Promise.all([
       supabase.from('activity_types').select('*').eq('is_active', true).order('sort_order'),
       demoUserId
         ? supabase
@@ -45,20 +40,29 @@ export default async function LogPage() {
             .lt('logged_at', end)
             .order('logged_at', { ascending: false })
         : Promise.resolve({ data: [] }),
+      demoUserId
+        ? supabase.from('goals').select('daily_points_goal').eq('user_id', demoUserId).eq('year', currentYear).single()
+        : Promise.resolve({ data: null }),
+      demoUserId
+        ? supabase.from('streaks').select('current_streak, shields_available').eq('user_id', demoUserId).single()
+        : Promise.resolve({ data: null }),
     ])
 
     const activityTypes = (activityTypesResult.data || []) as Tables<'activity_types'>[]
     const todayActivities = (todayActivitiesResult.data || []) as ActivityWithType[]
     const todayPoints = todayActivities.reduce((sum, a) => sum + Number(a.points), 0)
+    const dailyGoal = goalsResult.data?.daily_points_goal ? Number(goalsResult.data.daily_points_goal) : 80
+    const streak = streakResult.data?.current_streak || 0
+    const shieldsAvailable = streakResult.data?.shields_available || 0
 
     return (
       <LogView
         activityTypes={activityTypes}
         todayActivities={todayActivities}
         todayPoints={todayPoints}
-        dailyGoal={80}
-        streak={0}
-        shieldsAvailable={0}
+        dailyGoal={dailyGoal}
+        streak={streak}
+        shieldsAvailable={shieldsAvailable}
         recentTypeIds={[]}
         isDemo
       />

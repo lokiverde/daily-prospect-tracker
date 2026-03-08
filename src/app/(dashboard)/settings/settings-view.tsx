@@ -14,9 +14,10 @@ interface SettingsViewProps {
     brokerage_visibility: string
   } | null
   dailyGoal: number
+  isDemo?: boolean
 }
 
-export function SettingsView({ profile, dailyGoal }: SettingsViewProps) {
+export function SettingsView({ profile, dailyGoal, isDemo = false }: SettingsViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editingName, setEditingName] = useState(false)
@@ -160,18 +161,20 @@ export function SettingsView({ profile, dailyGoal }: SettingsViewProps) {
         </div>
       </section>
 
-      {/* Sign out */}
-      <section className="bg-card border border-border rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={isPending}
-          className="w-full px-4 py-3 flex items-center gap-3 touch-manipulation"
-        >
-          <LogOut className="h-5 w-5 text-fire shrink-0" />
-          <p className="text-sm font-medium text-fire">Sign Out</p>
-        </button>
-      </section>
+      {/* Sign out (hidden in demo mode) */}
+      {!isDemo && (
+        <section className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isPending}
+            className="w-full px-4 py-3 flex items-center gap-3 touch-manipulation"
+          >
+            <LogOut className="h-5 w-5 text-fire shrink-0" />
+            <p className="text-sm font-medium text-fire">Sign Out</p>
+          </button>
+        </section>
+      )}
 
       {/* App info */}
       <p className="text-center text-xs text-muted py-2">

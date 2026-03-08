@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   // In demo mode, skip all auth checks and let requests through
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+  // Check both NEXT_PUBLIC_ (client) and DEMO_MODE (server/edge) variants
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.DEMO_MODE === 'true') {
     const response = NextResponse.next({ request })
     response.headers.set('x-next-pathname', request.nextUrl.pathname)
     return response

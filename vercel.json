@@ -1,24 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "env": [
-    {
-      "key": "NEXT_PUBLIC_SUPABASE_URL",
-      "description": "Your Supabase project URL. Find it in Supabase Dashboard > Settings > API > Project URL.",
-      "required": true,
-      "type": "plain"
-    },
-    {
-      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      "description": "Your Supabase anonymous (public) key. Find it in Supabase Dashboard > Settings > API > anon public.",
-      "required": true,
-      "type": "plain"
-    },
-    {
-      "key": "SUPABASE_SERVICE_ROLE_KEY",
-      "description": "Your Supabase service role (secret) key. Find it in Supabase Dashboard > Settings > API > service_role. Keep this secret.",
-      "required": true,
-      "type": "secret"
-    }
-  ]
+  "framework": "nextjs"
 }

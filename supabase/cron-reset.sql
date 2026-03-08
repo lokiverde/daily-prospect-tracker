@@ -69,22 +69,22 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Look up activity type IDs
-  SELECT id INTO v_at_listing FROM public.activity_types WHERE name = 'Take Listing' LIMIT 1;
-  SELECT id INTO v_at_offer FROM public.activity_types WHERE name = 'Write Offer' LIMIT 1;
-  SELECT id INTO v_at_appointment FROM public.activity_types WHERE name = 'Client Appointment' LIMIT 1;
-  SELECT id INTO v_at_set_appt FROM public.activity_types WHERE name = 'Set Appointment' LIMIT 1;
+  -- Look up activity type IDs (must match names from migrations)
+  SELECT id INTO v_at_listing FROM public.activity_types WHERE name = 'Take Listing / Write Offer' LIMIT 1;
+  SELECT id INTO v_at_offer FROM public.activity_types WHERE name = 'Take Listing / Write Offer' LIMIT 1;
+  SELECT id INTO v_at_appointment FROM public.activity_types WHERE name = 'Client Appointment / Video' LIMIT 1;
+  SELECT id INTO v_at_set_appt FROM public.activity_types WHERE name = 'Set First Appointment' LIMIT 1;
   SELECT id INTO v_at_open_house FROM public.activity_types WHERE name = 'Hold Open House' LIMIT 1;
   SELECT id INTO v_at_show_home FROM public.activity_types WHERE name = 'Show Home' LIMIT 1;
-  SELECT id INTO v_at_phone FROM public.activity_types WHERE name = 'Phone Call' LIMIT 1;
-  SELECT id INTO v_at_soi_call FROM public.activity_types WHERE name = 'SOI Call' LIMIT 1;
-  SELECT id INTO v_at_email FROM public.activity_types WHERE name = 'Email/DM' LIMIT 1;
+  SELECT id INTO v_at_phone FROM public.activity_types WHERE name = 'Phone Call (Client/Prospect)' LIMIT 1;
+  SELECT id INTO v_at_soi_call FROM public.activity_types WHERE name = 'Phone Call (SOI/Past Client)' LIMIT 1;
+  SELECT id INTO v_at_email FROM public.activity_types WHERE name = 'Email / DM Message' LIMIT 1;
   SELECT id INTO v_at_text FROM public.activity_types WHERE name = 'Text Message' LIMIT 1;
-  SELECT id INTO v_at_cma FROM public.activity_types WHERE name = 'CMA Sent' LIMIT 1;
-  SELECT id INTO v_at_video FROM public.activity_types WHERE name = 'Post Video' LIMIT 1;
-  SELECT id INTO v_at_review FROM public.activity_types WHERE name = 'Request Client Review' LIMIT 1;
+  SELECT id INTO v_at_cma FROM public.activity_types WHERE name = 'CMA Sent to Client' LIMIT 1;
+  SELECT id INTO v_at_video FROM public.activity_types WHERE name = 'Post Video to Social Media' LIMIT 1;
+  SELECT id INTO v_at_review FROM public.activity_types WHERE name = 'Send Google Review Request' LIMIT 1;
   SELECT id INTO v_at_coffee FROM public.activity_types WHERE name = 'Coffee Appointment' LIMIT 1;
-  SELECT id INTO v_at_door_knock FROM public.activity_types WHERE name = 'Door Knock' LIMIT 1;
+  SELECT id INTO v_at_door_knock FROM public.activity_types WHERE name = 'Add Missing Info to CRM' LIMIT 1;
   SELECT id INTO v_at_huddle FROM public.activity_types WHERE name = 'Daily Huddle' LIMIT 1;
   SELECT id INTO v_at_meeting FROM public.activity_types WHERE name = 'Weekly Sales Meeting' LIMIT 1;
 

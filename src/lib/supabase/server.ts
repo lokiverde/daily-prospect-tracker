@@ -61,3 +61,16 @@ export function createAdminClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
+
+// Demo-safe timezone fetcher that uses admin client (no auth required)
+export async function getDemoBrokerageTimezone(): Promise<string> {
+  const supabase = createAdminClient()
+  const { data: brokerage } = await supabase
+    .from('brokerages')
+    .select('settings')
+    .limit(1)
+    .single()
+
+  const settings = brokerage?.settings as Record<string, unknown> | null
+  return (settings?.timezone as string) || 'America/Los_Angeles'
+}

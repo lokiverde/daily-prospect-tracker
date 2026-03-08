@@ -1,17 +1,87 @@
-import { createClient, getBrokerageTimezone } from '@/lib/supabase/server'
+import { createClient, createAdminClient, getBrokerageTimezone, getDemoBrokerageTimezone } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getWeekStart, getMonthStart, getYearStart, getTodayRange } from '@/lib/calculations'
 import { Header } from '@/components/layout/header'
 import { DashboardView } from './dashboard-view'
-import { isDemoMode } from '@/lib/demo'
+import { isDemoMode, DEMO_AGENT_EMAIL } from '@/lib/demo'
 import type { Tables } from '@/lib/supabase/types'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  // In demo mode, the leaderboard is the hero screen
+  // In demo mode, load dashboard for the "New Agent" demo user
   if (isDemoMode()) {
-    redirect('/team')
+    const supabase = createAdminClient()
+
+    const { data: demoUser } = await supabase
+      .from('users')
+      .select('id, full_name')
+      .eq('email', DEMO_AGENT_EMAIL)
+      .single()
+
+    if (!demoUser) redirect('/team')
+
+    const tz = await getDemoBrokerageTimezone()
+    const weekStart = getWeekStart(tz)
+    const monthStart = getMonthStart(tz)
+    const { start: todayStart, end: todayEnd } = getTodayRange(tz)
+    const currentYear = new Date().getFullYear()
+    const yearStart = getYearStart(tz)
+
+    const [weekResult, monthResult, goalsResult, streakResult, quoteResult, weekDailyResult, todayResult, funnelResult] = await Promise.all([
+      supabase.from('activities').select('points').eq('user_id', demoUser.id).gte('logged_at', weekStart),
+      supabase.from('activities').select('points').eq('user_id', demoUser.id).gte('logged_at', monthStart),
+      supabase.from('goals').select('*').eq('user_id', demoUser.id).eq('year', currentYear).single(),
+      supabase.from('streaks').select('current_streak, shields_available').eq('user_id', demoUser.id).single(),
+      supabase.from('quotes').select('text, author').eq('is_active', true).limit(10),
+      supabase.from('activities').select('points, logged_at').eq('user_id', demoUser.id).gte('logged_at', weekStart),
+      supabase.from('activities').select('points').eq('user_id', demoUser.id).gte('logged_at', todayStart).lt('logged_at', todayEnd),
+      supabase.from('activities').select('activity_type_id, activity_types!inner(category, name)').eq('user_id', demoUser.id).gte('logged_at', yearStart),
+    ])
+
+    const weekTotal = ((weekResult.data || []) as { points: number }[]).reduce((sum, a) => sum + Number(a.points), 0)
+    const monthTotal = ((monthResult.data || []) as { points: number }[]).reduce((sum, a) => sum + Number(a.points), 0)
+    const todayActivities = (todayResult.data || []) as { points: number }[]
+    const todayPoints = todayActivities.reduce((sum, a) => sum + Number(a.points), 0)
+    const goals = goalsResult.data as Tables<'goals'> | null
+    const streakData = streakResult.data as { current_streak: number; shields_available: number } | null
+    const quotes = (quoteResult.data || []) as { text: string; author: string | null }[]
+    const quote = quotes.length > 0 ? quotes[Math.floor(Math.random() * quotes.length)] : null
+
+    const funnelActivities = (funnelResult.data || []) as { activity_type_id: string; activity_types: { category: string; name: string } }[]
+    const funnelCounts = { contact: 0, appointment: 0, contract: 0, closing: 0 }
+    for (const a of funnelActivities) {
+      const cat = a.activity_types?.category
+      const name = a.activity_types?.name
+      if (name === 'Add Client to CRM') funnelCounts.contact++
+      else if (cat === 'appointment') funnelCounts.appointment++
+      else if (cat === 'contract') funnelCounts.contract++
+      else if (cat === 'closing') funnelCounts.closing++
+    }
+
+    return (
+      <>
+        <Header title="Dashboard" />
+        <DashboardView
+          userName={demoUser.full_name || 'New Agent'}
+          dailyGoal={goals?.daily_points_goal ? Number(goals.daily_points_goal) : 80}
+          streak={streakData?.current_streak || 0}
+          shieldsAvailable={streakData?.shields_available || 0}
+          todayPoints={todayPoints}
+          todayActivitiesCount={todayActivities.length}
+          weekActivities={(weekDailyResult.data || []) as { points: number; logged_at: string }[]}
+          weekTotal={weekTotal}
+          monthTotal={monthTotal}
+          funnel={{
+            contacts: { actual: funnelCounts.contact, goal: goals?.contacts_goal ? Number(goals.contacts_goal) : 0 },
+            appointments: { actual: funnelCounts.appointment, goal: goals?.appointments_goal ? Number(goals.appointments_goal) : 0 },
+            contracts: { actual: funnelCounts.contract, goal: goals?.contracts_goal ? Number(goals.contracts_goal) : 0 },
+            closings: { actual: funnelCounts.closing, goal: goals?.closings_goal ? Number(goals.closings_goal) : 0 },
+          }}
+          quote={quote}
+        />
+      </>
+    )
   }
 
   const supabase = await createClient()

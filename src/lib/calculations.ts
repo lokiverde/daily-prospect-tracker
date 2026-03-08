@@ -65,31 +65,49 @@ function formatPts(pts: number): string {
 
 const DEFAULT_TIMEZONE = 'America/Los_Angeles'
 
-/** Get the UTC offset in milliseconds for a timezone at a given moment. */
-function getTimezoneOffsetMs(tz: string, date: Date = new Date()): number {
-  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' })
-  const tzStr = date.toLocaleString('en-US', { timeZone: tz })
-  return (new Date(tzStr).getTime() - new Date(utcStr).getTime())
-}
-
-/** Get the current date components (year, month, day, dayOfWeek) in a given timezone. */
+/** Get the current date components (year, month, day, dayOfWeek) in a given timezone.
+ *  Uses Intl.DateTimeFormat which correctly handles DST transitions. */
 function getLocalDateParts(tz: string, date: Date = new Date()) {
-  const offsetMs = getTimezoneOffsetMs(tz, date)
-  const local = new Date(date.getTime() + offsetMs)
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  })
+  const parts = formatter.formatToParts(date)
+  const get = (type: string) => parts.find(p => p.type === type)?.value || ''
   return {
-    year: local.getUTCFullYear(),
-    month: local.getUTCMonth(),
-    day: local.getUTCDate(),
-    dayOfWeek: local.getUTCDay(),
+    year: parseInt(get('year'), 10),
+    month: parseInt(get('month'), 10) - 1, // 0-indexed to match Date convention
+    day: parseInt(get('day'), 10),
+    dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')),
   }
 }
 
-/** Convert a local midnight to a UTC ISO string. */
+/** Convert a local midnight to a UTC ISO string.
+ *  Two-pass approach: first estimates midnight using noon offset, then
+ *  recalculates using the offset from several hours before midnight
+ *  to correctly handle DST spring-forward/fall-back transitions. */
 function localMidnightToUTC(tz: string, year: number, month: number, day: number): string {
-  const approx = new Date(Date.UTC(year, month, day, 12))
-  const offsetMs = getTimezoneOffsetMs(tz, approx)
-  const midnightUTC = new Date(Date.UTC(year, month, day) - offsetMs)
-  return midnightUTC.toISOString()
+  function getOffsetAt(date: Date): number {
+    const u = date.toLocaleString('en-US', { timeZone: 'UTC' })
+    const t = date.toLocaleString('en-US', { timeZone: tz })
+    return new Date(t).getTime() - new Date(u).getTime()
+  }
+
+  // Pass 1: rough estimate using noon offset
+  const noon = new Date(Date.UTC(year, month, day, 12))
+  const roughOffset = getOffsetAt(noon)
+  const roughMidnight = Date.UTC(year, month, day) - roughOffset
+
+  // Pass 2: get the actual offset several hours before estimated midnight
+  // This lands in the evening of the previous day (local), well before any
+  // 2 AM DST transition, giving us the correct pre-midnight offset
+  const beforeMidnight = new Date(roughMidnight - 6 * 3600000)
+  const exactOffset = getOffsetAt(beforeMidnight)
+
+  return new Date(Date.UTC(year, month, day) - exactOffset).toISOString()
 }
 
 /** Get start and end of a specific day in the brokerage timezone. */

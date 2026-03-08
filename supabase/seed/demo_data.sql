@@ -77,24 +77,24 @@ BEGIN
 
   v_current_year := EXTRACT(YEAR FROM NOW())::INT;
 
-  -- Look up activity type IDs by name
-  SELECT id INTO v_at_listing FROM public.activity_types WHERE name = 'Take Listing' LIMIT 1;
-  SELECT id INTO v_at_offer FROM public.activity_types WHERE name = 'Write Offer' LIMIT 1;
-  SELECT id INTO v_at_appointment FROM public.activity_types WHERE name = 'Client Appointment' LIMIT 1;
-  SELECT id INTO v_at_set_appt FROM public.activity_types WHERE name = 'Set Appointment' LIMIT 1;
+  -- Look up activity type IDs by name (must match names from migrations)
+  SELECT id INTO v_at_listing FROM public.activity_types WHERE name = 'Take Listing / Write Offer' LIMIT 1;
+  SELECT id INTO v_at_offer FROM public.activity_types WHERE name = 'Take Listing / Write Offer' LIMIT 1;
+  SELECT id INTO v_at_appointment FROM public.activity_types WHERE name = 'Client Appointment / Video' LIMIT 1;
+  SELECT id INTO v_at_set_appt FROM public.activity_types WHERE name = 'Set First Appointment' LIMIT 1;
   SELECT id INTO v_at_open_house FROM public.activity_types WHERE name = 'Hold Open House' LIMIT 1;
   SELECT id INTO v_at_show_home FROM public.activity_types WHERE name = 'Show Home' LIMIT 1;
-  SELECT id INTO v_at_phone FROM public.activity_types WHERE name = 'Phone Call' LIMIT 1;
-  SELECT id INTO v_at_soi_call FROM public.activity_types WHERE name = 'SOI Call' LIMIT 1;
-  SELECT id INTO v_at_email FROM public.activity_types WHERE name = 'Email/DM' LIMIT 1;
+  SELECT id INTO v_at_phone FROM public.activity_types WHERE name = 'Phone Call (Client/Prospect)' LIMIT 1;
+  SELECT id INTO v_at_soi_call FROM public.activity_types WHERE name = 'Phone Call (SOI/Past Client)' LIMIT 1;
+  SELECT id INTO v_at_email FROM public.activity_types WHERE name = 'Email / DM Message' LIMIT 1;
   SELECT id INTO v_at_text FROM public.activity_types WHERE name = 'Text Message' LIMIT 1;
   SELECT id INTO v_at_voicemail FROM public.activity_types WHERE name = 'Voicemail Left' LIMIT 1;
-  SELECT id INTO v_at_cma FROM public.activity_types WHERE name = 'CMA Sent' LIMIT 1;
-  SELECT id INTO v_at_video FROM public.activity_types WHERE name = 'Post Video' LIMIT 1;
-  SELECT id INTO v_at_review FROM public.activity_types WHERE name = 'Request Client Review' LIMIT 1;
+  SELECT id INTO v_at_cma FROM public.activity_types WHERE name = 'CMA Sent to Client' LIMIT 1;
+  SELECT id INTO v_at_video FROM public.activity_types WHERE name = 'Post Video to Social Media' LIMIT 1;
+  SELECT id INTO v_at_review FROM public.activity_types WHERE name = 'Send Google Review Request' LIMIT 1;
   SELECT id INTO v_at_coffee FROM public.activity_types WHERE name = 'Coffee Appointment' LIMIT 1;
-  SELECT id INTO v_at_escrow FROM public.activity_types WHERE name = 'Open Escrow' LIMIT 1;
-  SELECT id INTO v_at_door_knock FROM public.activity_types WHERE name = 'Door Knock' LIMIT 1;
+  SELECT id INTO v_at_escrow FROM public.activity_types WHERE name = 'Open an Escrow' LIMIT 1;
+  SELECT id INTO v_at_door_knock FROM public.activity_types WHERE name = 'Add Missing Info to CRM' LIMIT 1;
   SELECT id INTO v_at_huddle FROM public.activity_types WHERE name = 'Daily Huddle' LIMIT 1;
   SELECT id INTO v_at_meeting FROM public.activity_types WHERE name = 'Weekly Sales Meeting' LIMIT 1;
 
@@ -126,7 +126,7 @@ BEGIN
   UPDATE public.users SET role = 'agent', brokerage_id = v_brokerage_id, team_id = v_team_id, full_name = 'New Agent', is_onboarded = true, brokerage_visibility = 'public' WHERE id = v_newagent_id;
 
   -- Create goals for all users
-  INSERT INTO public.goals (user_id, year, annual_income_goal, commission_rate, avg_sale_price, closings_goal, contracts_goal, appointments_goal, contacts_goal, daily_points_goal)
+  INSERT INTO public.goals (user_id, year, annual_income_goal, avg_commission_pct, avg_sale_price, closings_goal, contracts_goal, appointments_goal, contacts_goal, daily_points_goal)
   VALUES
     (v_beowulf_id, v_current_year, 250000, 0.025, 800000, 13, 16, 32, 107, 80),
     (v_sarah_id, v_current_year, 200000, 0.025, 600000, 14, 17, 34, 114, 80),

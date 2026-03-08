@@ -14,7 +14,7 @@ import { FloatingPoints } from '@/components/activity/floating-points'
 import { EmptyState } from '@/components/activity/empty-state'
 import { getPointsToGoal } from '@/lib/calculations'
 import { logActivity, logBatchActivity, undoActivity, getDayActivities } from './actions'
-import { logDemoActivity, undoDemoActivity } from './demo-actions'
+import { logDemoActivity, undoDemoActivity, getDemoDayActivities } from './demo-actions'
 
 interface LogViewProps {
   activityTypes: Tables<'activity_types'>[]
@@ -132,7 +132,9 @@ export function LogView({
       setActivities(todayDataRef.current.activities)
     } else {
       setIsDateLoading(true)
-      const result = await getDayActivities(dateStr)
+      const result = isDemo
+        ? await getDemoDayActivities(dateStr)
+        : await getDayActivities(dateStr)
       setPoints(result.points)
       setActivities(result.activities as typeof activities)
       setIsDateLoading(false)
@@ -159,7 +161,7 @@ export function LogView({
       }
 
       const result = isDemo
-        ? await logDemoActivity(typeId, pts)
+        ? await logDemoActivity(typeId, pts, !isToday ? selectedDate : undefined)
         : await logActivity(
             typeId,
             pts,
@@ -264,8 +266,8 @@ export function LogView({
           />
         ))}
 
-        {/* Date navigator (hidden in demo mode) */}
-        {!isDemo && <div className="flex items-center justify-center gap-2 pt-3 pb-1">
+        {/* Date navigator */}
+        <div className="flex items-center justify-center gap-2 pt-3 pb-1">
           <button
             type="button"
             onClick={() => navigateDay(-1)}
@@ -301,9 +303,9 @@ export function LogView({
               Today
             </button>
           )}
-        </div>}
+        </div>
 
-        {!isDemo && !isToday && (
+        {!isToday && (
           <p className="text-center text-xs text-warning font-medium">
             Logging for {getDateLabel(selectedDate)}
           </p>

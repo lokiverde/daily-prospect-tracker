@@ -43,7 +43,7 @@ export function TeamView({
   const [leaderboard, setLeaderboard] = useState(initialLeaderboard)
 
   const [error, setError] = useState<string | null>(null)
-  const canViewDetail = isDemo ? false : ['admin', 'broker', 'team_leader'].includes(userRole)
+  const canViewDetail = isDemo ? true : ['admin', 'broker', 'team_leader'].includes(userRole)
 
   function handlePeriodChange(newPeriod: Period) {
     setPeriod(newPeriod)
