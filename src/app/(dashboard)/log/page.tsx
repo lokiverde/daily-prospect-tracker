@@ -1,7 +1,8 @@
-import { createClient, getBrokerageTimezone } from '@/lib/supabase/server'
+import { createClient, getBrokerageTimezone, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTodayRange } from '@/lib/calculations'
 import { LogView } from './log-view'
+import { isDemoMode, DEMO_AGENT_EMAIL } from '@/lib/demo'
 import type { Tables } from '@/lib/supabase/types'
 
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,59 @@ type ActivityWithType = Tables<'activities'> & {
 }
 
 export default async function LogPage() {
+  // Demo mode: use admin client and demo user
+  if (isDemoMode()) {
+    const supabase = createAdminClient()
+
+    // Look up demo user
+    const { data: demoUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', DEMO_AGENT_EMAIL)
+      .single()
+
+    const demoUserId = demoUser?.id || ''
+
+    // Get brokerage timezone
+    const { data: brokerage } = await supabase
+      .from('brokerages')
+      .select('settings')
+      .limit(1)
+      .single()
+    const tz = (brokerage?.settings as { timezone?: string } | null)?.timezone || 'America/Los_Angeles'
+    const { start, end } = getTodayRange(tz)
+
+    const [activityTypesResult, todayActivitiesResult] = await Promise.all([
+      supabase.from('activity_types').select('*').eq('is_active', true).order('sort_order'),
+      demoUserId
+        ? supabase
+            .from('activities')
+            .select('*, activity_types(name, icon)')
+            .eq('user_id', demoUserId)
+            .gte('logged_at', start)
+            .lt('logged_at', end)
+            .order('logged_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const activityTypes = (activityTypesResult.data || []) as Tables<'activity_types'>[]
+    const todayActivities = (todayActivitiesResult.data || []) as ActivityWithType[]
+    const todayPoints = todayActivities.reduce((sum, a) => sum + Number(a.points), 0)
+
+    return (
+      <LogView
+        activityTypes={activityTypes}
+        todayActivities={todayActivities}
+        todayPoints={todayPoints}
+        dailyGoal={80}
+        streak={0}
+        shieldsAvailable={0}
+        recentTypeIds={[]}
+        isDemo
+      />
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

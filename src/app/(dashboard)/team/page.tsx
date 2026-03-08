@@ -3,9 +3,31 @@ import { redirect } from 'next/navigation'
 import { getWeekStart } from '@/lib/calculations'
 import { Header } from '@/components/layout/header'
 import { TeamView } from './team-view'
+import { isDemoMode } from '@/lib/demo'
+import { getDemoLeaderboard } from './demo-actions'
 import type { LeaderboardEntry } from './actions'
 
 export default async function TeamPage() {
+  // Demo mode: public leaderboard, no auth needed
+  if (isDemoMode()) {
+    const { data: initialLeaderboard } = await getDemoLeaderboard('week')
+    return (
+      <>
+        <Header title="Leaderboard" />
+        <TeamView
+          userId=""
+          userRole="agent"
+          userTeamId={null}
+          userBrokerageId={null}
+          initialLeaderboard={initialLeaderboard}
+          initialPeriod="week"
+          initialScope="brokerage"
+          isDemo
+        />
+      </>
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

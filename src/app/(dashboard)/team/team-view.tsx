@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { LeaderboardRow } from '@/components/team/leaderboard-row'
 import { getLeaderboard, type LeaderboardEntry } from './actions'
+import { getDemoLeaderboard } from './demo-actions'
 
 type Period = 'week' | 'month' | 'year'
 type Scope = 'team' | 'brokerage'
@@ -16,6 +17,7 @@ interface TeamViewProps {
   initialLeaderboard: LeaderboardEntry[]
   initialPeriod: Period
   initialScope: Scope
+  isDemo?: boolean
 }
 
 const PERIODS: { label: string; value: Period }[] = [
@@ -32,6 +34,7 @@ export function TeamView({
   initialLeaderboard,
   initialPeriod,
   initialScope,
+  isDemo = false,
 }: TeamViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -40,7 +43,7 @@ export function TeamView({
   const [leaderboard, setLeaderboard] = useState(initialLeaderboard)
 
   const [error, setError] = useState<string | null>(null)
-  const canViewDetail = ['admin', 'broker', 'team_leader'].includes(userRole)
+  const canViewDetail = isDemo ? false : ['admin', 'broker', 'team_leader'].includes(userRole)
 
   function handlePeriodChange(newPeriod: Period) {
     setPeriod(newPeriod)
@@ -55,11 +58,16 @@ export function TeamView({
   function fetchLeaderboard(p: Period, s: Scope) {
     setError(null)
     startTransition(async () => {
-      const result = await getLeaderboard(p, s)
-      if (result.error) {
-        setError(result.error)
+      if (isDemo) {
+        const result = await getDemoLeaderboard(p)
+        setLeaderboard(result.data)
+      } else {
+        const result = await getLeaderboard(p, s)
+        if (result.error) {
+          setError(result.error)
+        }
+        setLeaderboard(result.data)
       }
-      setLeaderboard(result.data)
     })
   }
 
@@ -110,8 +118,8 @@ export function TeamView({
         </div>
       </div>
 
-      {/* Scope tabs - only show when user has both a team and a brokerage */}
-      {hasTeam && hasBrokerage && (
+      {/* Scope tabs - only show when user has both a team and a brokerage (hidden in demo) */}
+      {!isDemo && hasTeam && hasBrokerage && (
         <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
           <button
             type="button"

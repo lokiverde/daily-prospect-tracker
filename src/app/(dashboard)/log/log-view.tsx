@@ -14,6 +14,7 @@ import { FloatingPoints } from '@/components/activity/floating-points'
 import { EmptyState } from '@/components/activity/empty-state'
 import { getPointsToGoal } from '@/lib/calculations'
 import { logActivity, logBatchActivity, undoActivity, getDayActivities } from './actions'
+import { logDemoActivity, undoDemoActivity } from './demo-actions'
 
 interface LogViewProps {
   activityTypes: Tables<'activity_types'>[]
@@ -25,6 +26,7 @@ interface LogViewProps {
   streak: number
   shieldsAvailable: number
   recentTypeIds: string[]
+  isDemo?: boolean
 }
 
 interface FloatingPoint {
@@ -58,6 +60,7 @@ export function LogView({
   streak,
   shieldsAvailable,
   recentTypeIds,
+  isDemo = false,
 }: LogViewProps) {
   const [points, setPoints] = useState(initialPoints)
   const [activities, setActivities] = useState(initialActivities)
@@ -155,13 +158,15 @@ export function LogView({
         setShowConfetti(true)
       }
 
-      const result = await logActivity(
-        typeId,
-        pts,
-        undefined,
-        undefined,
-        !isToday ? selectedDate : undefined
-      )
+      const result = isDemo
+        ? await logDemoActivity(typeId, pts)
+        : await logActivity(
+            typeId,
+            pts,
+            undefined,
+            undefined,
+            !isToday ? selectedDate : undefined
+          )
 
       if (result.error) {
         setPoints(prevPoints)
@@ -187,7 +192,7 @@ export function LogView({
         undoTimerRef.current = setTimeout(() => setUndoItem(null), 30000)
       }
     },
-    [points, dailyGoal, isToday, selectedDate]
+    [points, dailyGoal, isToday, selectedDate, isDemo]
   )
 
   const handleBatchConfirm = useCallback(
@@ -220,7 +225,9 @@ export function LogView({
     const prevPoints = points
     setPoints((p) => p - undoItem.points)
 
-    const result = await undoActivity(undoItem.id)
+    const result = isDemo
+      ? await undoDemoActivity(undoItem.id)
+      : await undoActivity(undoItem.id)
 
     if (result.error) {
       setPoints(prevPoints)
@@ -231,7 +238,7 @@ export function LogView({
 
     setUndoItem(null)
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
-  }, [undoItem, points])
+  }, [undoItem, points, isDemo])
 
   const removeFloatingPoint = useCallback((id: string) => {
     setFloatingPoints((prev) => prev.filter((p) => p.id !== id))
@@ -257,8 +264,8 @@ export function LogView({
           />
         ))}
 
-        {/* Date navigator */}
-        <div className="flex items-center justify-center gap-2 pt-3 pb-1">
+        {/* Date navigator (hidden in demo mode) */}
+        {!isDemo && <div className="flex items-center justify-center gap-2 pt-3 pb-1">
           <button
             type="button"
             onClick={() => navigateDay(-1)}
@@ -294,9 +301,9 @@ export function LogView({
               Today
             </button>
           )}
-        </div>
+        </div>}
 
-        {!isToday && (
+        {!isDemo && !isToday && (
           <p className="text-center text-xs text-warning font-medium">
             Logging for {getDateLabel(selectedDate)}
           </p>
@@ -359,12 +366,14 @@ export function LogView({
                   )
                 })}
               </div>
-              <Link
-                href="/history"
-                className="block text-center text-sm text-primary font-medium py-3 touch-manipulation"
-              >
-                View All History
-              </Link>
+              {!isDemo && (
+                <Link
+                  href="/history"
+                  className="block text-center text-sm text-primary font-medium py-3 touch-manipulation"
+                >
+                  View All History
+                </Link>
+              )}
             </div>
           )}
         </div>

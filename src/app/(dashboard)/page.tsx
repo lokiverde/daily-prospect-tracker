@@ -3,11 +3,17 @@ import { redirect } from 'next/navigation'
 import { getWeekStart, getMonthStart, getYearStart, getTodayRange } from '@/lib/calculations'
 import { Header } from '@/components/layout/header'
 import { DashboardView } from './dashboard-view'
+import { isDemoMode } from '@/lib/demo'
 import type { Tables } from '@/lib/supabase/types'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
+  // In demo mode, the leaderboard is the hero screen
+  if (isDemoMode()) {
+    redirect('/team')
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
