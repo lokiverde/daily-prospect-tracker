@@ -368,14 +368,12 @@ export function LogView({
                   )
                 })}
               </div>
-              {!isDemo && (
-                <Link
-                  href="/history"
-                  className="block text-center text-sm text-primary font-medium py-3 touch-manipulation"
-                >
-                  View All History
-                </Link>
-              )}
+              <Link
+                href="/history"
+                className="block text-center text-sm text-primary font-medium py-3 touch-manipulation"
+              >
+                View All History
+              </Link>
             </div>
           )}
         </div>

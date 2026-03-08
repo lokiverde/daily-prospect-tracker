@@ -1,9 +1,56 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { HistoryView } from './history-view'
+import { isDemoMode, DEMO_AGENT_EMAIL } from '@/lib/demo'
 
 export default async function HistoryPage() {
+  if (isDemoMode()) {
+    const supabase = createAdminClient()
+
+    const { data: demoUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', DEMO_AGENT_EMAIL)
+      .single()
+
+    const demoUserId = demoUser?.id || ''
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    const { data: activities } = demoUserId
+      ? await supabase
+          .from('activities')
+          .select('id, activity_type_id, points, contact_name, notes, logged_at, activity_types(name, icon, category)')
+          .eq('user_id', demoUserId)
+          .gte('logged_at', sevenDaysAgo.toISOString())
+          .order('logged_at', { ascending: false })
+          .limit(200)
+      : { data: [] }
+
+    const typedActivities = (activities ?? []) as Array<{
+      id: string
+      activity_type_id: string
+      points: number
+      contact_name: string | null
+      notes: string | null
+      logged_at: string
+      activity_types: {
+        name: string
+        icon: string
+        category: string
+      } | null
+    }>
+
+    return (
+      <>
+        <Header title="Activity History" subtitle="Your recent activities" />
+        <HistoryView initialActivities={typedActivities} userId={demoUserId} isDemo />
+      </>
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

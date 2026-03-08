@@ -3,6 +3,7 @@
 import { useState, useTransition, useCallback } from 'react'
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import { loadMoreActivities, deleteActivity } from './actions'
+import { loadMoreDemoActivities, deleteDemoActivity } from './demo-actions'
 
 interface Activity {
   id: string
@@ -21,9 +22,10 @@ interface Activity {
 interface HistoryViewProps {
   initialActivities: Activity[]
   userId: string
+  isDemo?: boolean
 }
 
-export function HistoryView({ initialActivities, userId }: HistoryViewProps) {
+export function HistoryView({ initialActivities, userId, isDemo = false }: HistoryViewProps) {
   const [activities, setActivities] = useState(initialActivities)
   const [hasMore, setHasMore] = useState(initialActivities.length >= 200)
   const [isPending, startTransition] = useTransition()
@@ -38,7 +40,9 @@ export function HistoryView({ initialActivities, userId }: HistoryViewProps) {
     const oldest = activities[activities.length - 1].logged_at
 
     startTransition(async () => {
-      const result = await loadMoreActivities(oldest)
+      const result = isDemo
+        ? await loadMoreDemoActivities(oldest)
+        : await loadMoreActivities(oldest)
       if (result.error || !result.data) return
 
       const newActivities = result.data as Activity[]
@@ -49,7 +53,9 @@ export function HistoryView({ initialActivities, userId }: HistoryViewProps) {
 
   const handleDelete = useCallback(async (activityId: string) => {
     setDeletingId(activityId)
-    const result = await deleteActivity(activityId)
+    const result = isDemo
+      ? await deleteDemoActivity(activityId)
+      : await deleteActivity(activityId)
     if (result.success) {
       setActivities((prev) => prev.filter((a) => a.id !== activityId))
     }
