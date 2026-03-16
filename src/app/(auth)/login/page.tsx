@@ -3,7 +3,7 @@
 import { Suspense, useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { login, loginWithMagicLink } from './actions'
 
@@ -42,8 +42,6 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
   const [mode, setMode] = useState<'password' | 'magic'>('password')
-  const router = useRouter()
-
   const [passwordState, passwordAction] = useActionState<ActionState, FormData>(
     async (_prev, formData) => {
       const result = await login(formData)
@@ -52,13 +50,12 @@ function LoginForm() {
     null
   )
 
-  // Redirect on successful password login
+  // Redirect on successful password login (hard navigation to ensure cookies are sent)
   useEffect(() => {
     if (passwordState?.success) {
-      router.push('/')
-      router.refresh()
+      window.location.href = '/'
     }
-  }, [passwordState?.success, router])
+  }, [passwordState?.success])
 
   const [magicState, magicAction] = useActionState<ActionState, FormData>(
     async (_prev, formData) => {
