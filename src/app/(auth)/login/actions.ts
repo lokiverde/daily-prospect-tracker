@@ -1,8 +1,9 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData) {
+export async function login(_prevState: { error?: string } | null, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -21,8 +22,8 @@ export async function login(formData: FormData) {
     return { error: error.message }
   }
 
-  // Determine where to send the user
-  let redirectTo = '/'
+  // Check onboarding status to redirect directly to the right page
+  // (avoids a double-redirect through / then /goals)
   if (data.user) {
     const { data: profile } = await supabase
       .from('users')
@@ -31,15 +32,14 @@ export async function login(formData: FormData) {
       .single()
 
     if (!profile?.is_onboarded) {
-      redirectTo = '/goals'
+      redirect('/goals')
     }
   }
 
-  // Return redirectTo instead of calling redirect() so cookies are preserved
-  return { redirectTo }
+  redirect('/')
 }
 
-export async function loginWithMagicLink(formData: FormData) {
+export async function loginWithMagicLink(_prevState: { error?: string; success?: string } | null, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string

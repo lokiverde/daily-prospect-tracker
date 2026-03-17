@@ -1,10 +1,34 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useActionState, useState } from 'react'
+import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
+import { login, loginWithMagicLink } from './actions'
+
+type ActionState = {
+  error?: string
+  success?: string
+} | null
+
+function SubmitButton({ children }: { children: React.ReactNode }) {
+  const { pending } = useFormStatus()
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={cn(
+        'flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-colors',
+        'hover:bg-primary/90 active:bg-primary/80',
+        'disabled:cursor-not-allowed disabled:opacity-60'
+      )}
+    >
+      {pending ? '...' : children}
+    </button>
+  )
+}
 
 export default function LoginPage() {
   return (
@@ -18,66 +42,12 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
   const [mode, setMode] = useState<'password' | 'magic'>('password')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setPending(true)
-    setError(null)
-    setSuccess(null)
+  const [passwordState, passwordAction] = useActionState(login, null)
+  const [magicState, magicAction] = useActionState(loginWithMagicLink, null)
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-
-    const supabase = createClient()
-
-    if (mode === 'password') {
-      const password = formData.get('password') as string
-
-      const { error: authError, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (authError) {
-        setError(authError.message)
-        setPending(false)
-        return
-      }
-
-      // Check onboarding status to determine redirect
-      let redirectTo = '/'
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('is_onboarded')
-          .eq('id', data.user.id)
-          .single()
-
-        if (!profile?.is_onboarded) {
-          redirectTo = '/goals'
-        }
-      }
-
-      window.location.href = redirectTo
-    } else {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (authError) {
-        setError(authError.message)
-      } else {
-        setSuccess('Check your email for a magic link to sign in.')
-      }
-      setPending(false)
-    }
-  }
+  const state: ActionState = mode === 'password' ? passwordState : magicState
+  const action = mode === 'password' ? passwordAction : magicAction
 
   return (
     <div className="space-y-6">
@@ -116,21 +86,21 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Error */}
-      {error && (
+      {/* Server action error */}
+      {state?.error && (
         <div className="rounded-lg border border-fire/20 bg-fire/10 px-4 py-3 text-sm text-fire">
-          {error}
+          {state.error}
         </div>
       )}
 
       {/* Success message (magic link) */}
-      {success && (
+      {state?.success && (
         <div className="rounded-lg border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">
-          {success}
+          {state.success}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form action={action} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
             Email
@@ -171,17 +141,9 @@ function LoginForm() {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className={cn(
-            'flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-colors',
-            'hover:bg-primary/90 active:bg-primary/80',
-            'disabled:cursor-not-allowed disabled:opacity-60'
-          )}
-        >
-          {pending ? '...' : mode === 'password' ? 'Sign In' : 'Send Magic Link'}
-        </button>
+        <SubmitButton>
+          {mode === 'password' ? 'Sign In' : 'Send Magic Link'}
+        </SubmitButton>
       </form>
 
       <div className="space-y-3 text-center text-sm">
