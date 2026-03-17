@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useActionState, useEffect, useState } from 'react'
+import { Suspense, useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -42,30 +42,11 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
   const [mode, setMode] = useState<'password' | 'magic'>('password')
-  const [passwordState, passwordAction] = useActionState<ActionState, FormData>(
-    async (_prev, formData) => {
-      const result = await login(formData)
-      return result ?? null
-    },
-    null
-  )
 
-  // Redirect on successful password login (hard navigation to ensure cookies are sent)
-  useEffect(() => {
-    if (passwordState?.success) {
-      window.location.href = '/'
-    }
-  }, [passwordState?.success])
+  const [passwordState, passwordAction] = useActionState(login, null)
+  const [magicState, magicAction] = useActionState(loginWithMagicLink, null)
 
-  const [magicState, magicAction] = useActionState<ActionState, FormData>(
-    async (_prev, formData) => {
-      const result = await loginWithMagicLink(formData)
-      return result ?? null
-    },
-    null
-  )
-
-  const state = mode === 'password' ? passwordState : magicState
+  const state: ActionState = mode === 'password' ? passwordState : magicState
   const action = mode === 'password' ? passwordAction : magicAction
 
   return (

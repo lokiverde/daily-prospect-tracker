@@ -1,8 +1,9 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData) {
+export async function login(_prevState: { error?: string } | null, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -12,7 +13,7 @@ export async function login(formData: FormData) {
     return { error: 'Email and password are required.' }
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error, data } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -21,10 +22,23 @@ export async function login(formData: FormData) {
     return { error: error.message }
   }
 
-  return { success: 'Logged in successfully.' }
+  // Check onboarding status to redirect to the right page
+  if (data.user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('is_onboarded')
+      .eq('id', data.user.id)
+      .single()
+
+    if (!profile?.is_onboarded) {
+      redirect('/goals')
+    }
+  }
+
+  redirect('/')
 }
 
-export async function loginWithMagicLink(formData: FormData) {
+export async function loginWithMagicLink(_prevState: { error?: string; success?: string } | null, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
