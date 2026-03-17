@@ -1,34 +1,10 @@
 'use client'
 
-import { Suspense, useActionState, useState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { Suspense, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { login, loginWithMagicLink } from './actions'
-
-type ActionState = {
-  error?: string
-  success?: string
-} | null
-
-function SubmitButton({ children }: { children: React.ReactNode }) {
-  const { pending } = useFormStatus()
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className={cn(
-        'flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-colors',
-        'hover:bg-primary/90 active:bg-primary/80',
-        'disabled:cursor-not-allowed disabled:opacity-60'
-      )}
-    >
-      {pending ? '...' : children}
-    </button>
-  )
-}
 
 export default function LoginPage() {
   return (
@@ -42,12 +18,36 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
   const [mode, setMode] = useState<'password' | 'magic'>('password')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const [passwordState, passwordAction] = useActionState(login, null)
-  const [magicState, magicAction] = useActionState(loginWithMagicLink, null)
+  async function handleSubmit(formData: FormData) {
+    setPending(true)
+    setError(null)
+    setSuccess(null)
 
-  const state: ActionState = mode === 'password' ? passwordState : magicState
-  const action = mode === 'password' ? passwordAction : magicAction
+    if (mode === 'password') {
+      const result = await login(formData)
+      if (result.error) {
+        setError(result.error)
+        setPending(false)
+      } else if (result.redirectTo) {
+        // Hard navigate to ensure cookies are sent with the request
+        window.location.href = result.redirectTo
+        // Keep pending=true so button stays disabled during navigation
+      }
+    } else {
+      const result = await loginWithMagicLink(formData)
+      if (result.error) {
+        setError(result.error)
+      } else if (result.success) {
+        setSuccess(result.success)
+      }
+      setPending(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -86,21 +86,21 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Server action error */}
-      {state?.error && (
+      {/* Error */}
+      {error && (
         <div className="rounded-lg border border-fire/20 bg-fire/10 px-4 py-3 text-sm text-fire">
-          {state.error}
+          {error}
         </div>
       )}
 
       {/* Success message (magic link) */}
-      {state?.success && (
+      {success && (
         <div className="rounded-lg border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">
-          {state.success}
+          {success}
         </div>
       )}
 
-      <form action={action} className="space-y-4">
+      <form ref={formRef} action={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
             Email
@@ -141,9 +141,17 @@ function LoginForm() {
           </div>
         )}
 
-        <SubmitButton>
-          {mode === 'password' ? 'Sign In' : 'Send Magic Link'}
-        </SubmitButton>
+        <button
+          type="submit"
+          disabled={pending}
+          className={cn(
+            'flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-colors',
+            'hover:bg-primary/90 active:bg-primary/80',
+            'disabled:cursor-not-allowed disabled:opacity-60'
+          )}
+        >
+          {pending ? '...' : mode === 'password' ? 'Sign In' : 'Send Magic Link'}
+        </button>
       </form>
 
       <div className="space-y-3 text-center text-sm">
