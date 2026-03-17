@@ -1,10 +1,10 @@
 'use client'
 
-import { Suspense, useState, useRef } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { login, loginWithMagicLink } from './actions'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   return (
@@ -21,7 +21,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,22 +29,51 @@ function LoginForm() {
     setSuccess(null)
 
     const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+
+    const supabase = createClient()
 
     if (mode === 'password') {
-      const result = await login(formData)
-      if (result.error) {
-        setError(result.error)
+      const password = formData.get('password') as string
+
+      const { error: authError, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError) {
+        setError(authError.message)
         setPending(false)
-      } else if (result.redirectTo) {
-        // Hard navigate to ensure cookies are sent with the request
-        window.location.href = result.redirectTo
+        return
       }
+
+      // Check onboarding status to determine redirect
+      let redirectTo = '/'
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('is_onboarded')
+          .eq('id', data.user.id)
+          .single()
+
+        if (!profile?.is_onboarded) {
+          redirectTo = '/goals'
+        }
+      }
+
+      window.location.href = redirectTo
     } else {
-      const result = await loginWithMagicLink(formData)
-      if (result.error) {
-        setError(result.error)
-      } else if (result.success) {
-        setSuccess(result.success)
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (authError) {
+        setError(authError.message)
+      } else {
+        setSuccess('Check your email for a magic link to sign in.')
       }
       setPending(false)
     }
@@ -102,7 +130,7 @@ function LoginForm() {
         </div>
       )}
 
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
             Email
