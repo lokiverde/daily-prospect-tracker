@@ -52,11 +52,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Block archived users: check is_active and sign out if false
+  // Block archived users and redirect un-onboarded users to goal setup
   if (user && !isAuthRoute) {
     const { data: profile } = await supabase
       .from('users')
-      .select('is_active')
+      .select('is_active, is_onboarded')
       .eq('id', user.id)
       .single()
 
@@ -64,6 +64,13 @@ export async function middleware(request: NextRequest) {
       await supabase.auth.signOut()
       const url = request.nextUrl.clone()
       url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Redirect un-onboarded users to goal setup wizard
+    if (profile && !(profile as { is_onboarded: boolean }).is_onboarded && !request.nextUrl.pathname.startsWith('/goals')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/goals'
       return NextResponse.redirect(url)
     }
   }

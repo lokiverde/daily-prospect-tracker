@@ -1,4 +1,3 @@
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MobileNav } from '@/components/layout/mobile-nav'
@@ -43,7 +42,7 @@ export default async function DashboardLayout({
   // Fetch the user profile from public.users table
   const { data: profile } = await supabase
     .from('users')
-    .select('is_onboarded, role, brokerage_id')
+    .select('role, brokerage_id')
     .eq('id', user.id)
     .single()
 
@@ -55,20 +54,6 @@ export default async function DashboardLayout({
 
     if (!count || count === 0) {
       redirect('/setup')
-    }
-  }
-
-  // If profile doesn't exist or user hasn't completed onboarding,
-  // redirect to the goal setup wizard.
-  const needsOnboarding = !profile || !profile.is_onboarded
-
-  if (needsOnboarding) {
-    const headersList = await headers()
-    const pathname = headersList.get('x-next-pathname') || ''
-
-    // Allow access to /goals so the user can complete the wizard
-    if (!pathname.startsWith('/goals')) {
-      redirect('/goals')
     }
   }
 
