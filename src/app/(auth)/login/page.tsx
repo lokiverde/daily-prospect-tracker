@@ -23,10 +23,13 @@ function LoginForm() {
   const [pending, setPending] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setPending(true)
     setError(null)
     setSuccess(null)
+
+    const formData = new FormData(e.currentTarget)
 
     if (mode === 'password') {
       const result = await login(formData)
@@ -36,7 +39,6 @@ function LoginForm() {
       } else if (result.redirectTo) {
         // Hard navigate to ensure cookies are sent with the request
         window.location.href = result.redirectTo
-        // Keep pending=true so button stays disabled during navigation
       }
     } else {
       const result = await loginWithMagicLink(formData)
@@ -100,7 +102,7 @@ function LoginForm() {
         </div>
       )}
 
-      <form ref={formRef} action={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
             Email
