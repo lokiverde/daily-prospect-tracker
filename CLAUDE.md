@@ -10,20 +10,17 @@ After completing any feature, bug fix, or significant change, automatically save
 
 **Daily Prospect Tracker** is a free, open source, mobile-first sales activity tracker for real estate agents and sales teams. It lives at `lokiverde/daily-prospect-tracker` on GitHub.
 
-**Three purposes this project serves simultaneously:**
+**Two purposes this project serves:**
 
 1. **Open source giveaway** -- Any broker-owner or team leader can clone it, deploy it to their own Supabase and Vercel accounts, and run it for free. The code is the door opener.
 
 2. **Consulting lead generator** -- Tony Self (Harcourts Hunter Mason, South Bay LA) implements this for broker-owners and team leaders at $3,500-$7,500 per engagement. The software is free. Tony's 30 years of brokerage operations knowledge is what they're actually paying for.
 
-3. **Live keynote demo** -- Used in Tony's "AI at Work" presentations to Vistage CEO groups and real estate conferences. The demo site runs at a public URL with pre-populated fake agents already competing. Audiences can pull it up on their phones during the presentation.
-
-**DEADLINE: Tony is speaking in Canada in two weeks. The demo site must be live before that date.**
-
 **What this is NOT:**
 - Not a SaaS product (that is salesgamify.com -- completely separate project)
 - Not a private brokerage tool (that is tracker.huntermason.com -- completely separate project)
 - Not a product Tony hosts for clients -- clients run it in their own infrastructure
+- **No public hosted demo.** The prior demo at `daily-prospect-tracker.vercel.app` has been taken down. Do not re-deploy a public demo without Tony's explicit direction.
 
 ---
 
@@ -44,42 +41,9 @@ When a broker-owner or team leader wants this set up:
 
 ---
 
-## Demo Site -- Priority Build for Canada Keynote
-
-**URL:** To be determined (Vercel preview URL acceptable for keynote, custom domain preferred)
-
-**What it needs to do:**
-- Load instantly on a phone pulled from a pocket in a conference room
-- Show a live-looking leaderboard with fake agents already competing
-- Let Tony (or an audience member) tap to log an activity and watch the leaderboard update in real time
-- Have a "Get This For Your Team" CTA at the bottom linking to Tony's consulting contact
-
-**How the demo works:**
-- Completely separate Supabase project from any production environment
-- Pre-populated with 6-8 fake agents with names and point totals already set
-- Resets automatically every 24 hours via pg_cron job inside Supabase (not on Tony's computer -- runs inside the DB automatically)
-- No login required to view -- public leaderboard visible immediately
-- One-tap activity logging available without account (demo mode, data resets nightly anyway)
-
-**Fake agent roster for demo (pre-populate these):**
-- Beowulf (top of leaderboard, 94 points -- yes, the Great Dane)
-- Sarah M. -- 87 points
-- James K. -- 71 points
-- Priya R. -- 68 points
-- Marcus T. -- 52 points
-- Lisa C. -- 41 points
-- Derek W. -- 23 points
-- New Agent -- 0 points (shows the before state)
-
-**pg_cron reset logic:**
-- Every day at 3am UTC: reset all activity counts to zero, restore baseline point totals to pre-set values, keep agents and names intact
-- This keeps the demo looking active (not brand new, not stale) without manual intervention
-
----
-
 ## Deploy to Vercel Button
 
-Every broker-owner who sees this at a conference should be able to hand their phone to their office manager and say "deploy this." The README must include a one-click Deploy to Vercel button.
+Every broker-owner who sees this repo should be able to hand their phone to their office manager and say "deploy this." The README includes a one-click Deploy to Vercel button.
 
 **What happens when someone clicks Deploy to Vercel:**
 1. Vercel forks the repo into their GitHub account
@@ -88,7 +52,7 @@ Every broker-owner who sees this at a conference should be able to hand their ph
 4. App loads at their Vercel URL
 5. A first-run /setup wizard walks them through creating the first admin account and seeding their agent roster
 
-**The /setup wizard is Phase 4 work -- get the demo live first. For now, document the manual setup steps clearly in README.md.**
+**The /setup wizard is still pending work.** Manual setup steps are documented in README.md until the wizard is built.
 
 ---
 
@@ -152,32 +116,22 @@ Every broker-owner who sees this at a conference should be able to hand their ph
 
 ---
 
-## Build Priority Order (Canada Deadline First)
+## Build Priority Order
 
-### Priority 1 -- Demo Site (Do This First)
-1. Verify current app builds and deploys cleanly to Vercel
-2. Create separate Supabase project for demo
-3. Seed fake agent roster with pre-set point totals
-4. Set up pg_cron daily reset job
-5. Enable public leaderboard view (no login required)
-6. Enable one-tap demo activity logging (no login, resets nightly)
-7. Add "Get This For Your Team" CTA with Tony's consulting contact link
-8. Confirm it loads fast on mobile, looks great on a phone held in landscape
-
-### Priority 2 -- README and Deploy Button
-1. Write clean README.md explaining what this is, who it's for, and how to self-deploy
-2. Add Deploy to Vercel button
+### Priority 1 -- README and Deploy Button
+1. Keep README.md clean: what this is, who it's for, how to self-deploy
+2. Keep Deploy to Vercel button working
 3. Document environment variables clearly
-4. Add manual setup steps for the first-run experience
+4. Keep manual setup steps for the first-run experience
 5. Add screenshots of the leaderboard and activity logging screen
 
-### Priority 3 -- First-Run Setup Wizard (/setup route)
+### Priority 2 -- First-Run Setup Wizard (/setup route)
 1. Detect if no admin account exists
 2. Walk new deployer through: create admin account, set brokerage name, seed default activities
 3. Redirect to dashboard when complete
 4. This is what makes cold deployment work for non-technical broker-owners
 
-### Priority 4 -- Polish and Open Source Release
+### Priority 3 -- Polish and Open Source Release
 1. MIT license confirmed (already in repo)
 2. Contributing guidelines
 3. Issue templates for feature requests
@@ -191,8 +145,8 @@ Every broker-owner who sees this at a conference should be able to hand their ph
 daily-prospect-tracker/
 +-- app/
 |   +-- layout.tsx
-|   +-- page.tsx                    # Public landing / leaderboard (no login required for demo)
-|   +-- setup/page.tsx              # First-run wizard (Phase 3)
+|   +-- page.tsx                    # Public landing / leaderboard
+|   +-- setup/page.tsx              # First-run wizard
 |   +-- (auth)/
 |   |   +-- login/page.tsx
 |   |   +-- signup/page.tsx
@@ -206,15 +160,11 @@ daily-prospect-tracker/
 |       +-- admin/page.tsx          # Brokerage admin (broker-owner only)
 +-- components/
 |   +-- leaderboard/
-|   |   +-- public-leaderboard.tsx  # No-login leaderboard for demo
 |   |   +-- leaderboard-row.tsx     # Shows % of goal
 |   +-- activity/
 |   |   +-- activity-grid.tsx
 |   |   +-- activity-button.tsx
 |   |   +-- point-animation.tsx
-|   +-- demo/
-|       +-- demo-banner.tsx         # "This is a demo. Get this for your team." banner
-|       +-- cta-strip.tsx           # Consulting CTA
 +-- lib/
 |   +-- supabase/
 |   |   +-- client.ts
@@ -222,11 +172,8 @@ daily-prospect-tracker/
 |   |   +-- middleware.ts
 |   +-- activities.ts               # Activity definitions and point values
 |   +-- calculations.ts             # Goal math, timezone-aware date boundaries
-|   +-- demo.ts                     # Demo mode detection and handling
 +-- supabase/
 |   +-- migrations/                 # Schema migrations
-|   +-- seed-demo.sql               # Demo agent data seed script
-|   +-- cron-reset.sql              # pg_cron daily reset job
 ```
 
 ---
@@ -237,7 +184,6 @@ daily-prospect-tracker/
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_DEMO_MODE=false         # Set to true on demo deployment
 NEXT_PUBLIC_CONSULTING_CTA_URL=https://calendly.com/techtony/30min
 ```
 
@@ -267,14 +213,6 @@ npm run lint   # ESLint
 
 ## What Success Looks Like
 
-**For the Canada keynote:**
-- [ ] Demo site loads in under 2 seconds on a phone
-- [ ] Leaderboard shows 8 fake agents with realistic point totals
-- [ ] Tony can tap to log an activity on stage and leaderboard updates live
-- [ ] "Get This For Your Team" CTA is visible and clickable
-- [ ] pg_cron resets demo data nightly without any manual intervention
-- [ ] Works on iOS Safari and Android Chrome
-
 **For open source release:**
 - [ ] README explains the product clearly to a non-technical broker-owner
 - [ ] Deploy to Vercel button works and produces a running app
@@ -298,9 +236,8 @@ These three projects never share infrastructure, databases, or code directly. Re
 
 ## Notes for Claude Code
 
-- Canada keynote is the hard deadline -- demo site is Priority 1, everything else waits
-- The consulting CTA on the demo site should link to Tony's calendar or contact page (ask Tony for the URL before building the CTA component)
-- pg_cron runs inside Supabase -- it does not require Tony's computer to be on
-- Demo mode should be detectable via environment variable so the same codebase serves both demo and client deployments
-- The leaderboard percentage calculation is the signature mechanic -- make sure it is correct before the demo goes live
-- Never use em-dashes anywhere
+- No public hosted demo. The prior `daily-prospect-tracker.vercel.app` Vercel project has been deleted. Do not re-deploy a public demo.
+- The consulting CTA in the README should link to Tony's calendar or contact page (ask Tony for the URL before adding a CTA anywhere).
+- Demo/keynote traffic is now routed to salesgamify.com (paid SaaS). This open source repo exists for self-hosters and consulting leads only.
+- The leaderboard percentage calculation is the signature mechanic -- make sure it is correct in any future work.
+- Never use em-dashes anywhere.
