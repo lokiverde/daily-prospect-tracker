@@ -1,6 +1,6 @@
 # Daily Prospect Tracker
 
-### 🔴 [Live Demo](https://daily-prospect-tracker.vercel.app) | [Deploy Your Own](#quick-start) | [Done-For-You Setup](#want-it-done-for-you)
+### [Deploy Your Own](#quick-start) | [Done-For-You Setup](#want-it-done-for-you)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flokiverde%2Fdaily-prospect-tracker&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Supabase%20credentials%20from%20your%20project%20dashboard&envLink=https%3A%2F%2Fsupabase.com%2Fdashboard%2Fproject%2F_%2Fsettings%2Fapi&project-name=daily-prospect-tracker)
